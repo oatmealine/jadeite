@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "module": "nodenext",
+    "target": "es2024",
+    "checkJs": true,
+    "allowJs": true,
+    "noImplicitAny": false,
+    "allowArbitraryExtensions": true
+  }
+}

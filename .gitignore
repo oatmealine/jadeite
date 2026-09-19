@@ -1,0 +1,25 @@
+# data storage
+raw/
+raw_ignored/
+*.jsonl
+*.csv
+
+# training artifacts
+*_artifacts/
+*.gguf
+*.safetensors
+
+# nodejs
+node_modules/
+
+# python
+.ruff_cache/
+venv/
+site-packages/
+
+# unsloth
+_unsloth*/
+unsloth_compiled_cache/
+
+# direnv
+.direnv

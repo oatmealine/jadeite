@@ -1,0 +1,7 @@
+{
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "@fast-csv/parse": "^5.0.7"
+  }
+}
