@@ -57,11 +57,6 @@ print("  setting up LoRA")
 # setup LoRA (worth testing QLoRA first maybe?)
 model = FastLanguageModel.get_peft_model(
     model,
-    # unsloth example
-    #r = 16,
-    #lora_alpha = 16,
-    #target_modules = ["q_proj", "k_proj", "v_proj", "o_proj"],
-    # claude
     r = 8, # 8 is less VRAM intensive
     target_modules = [
         "q_proj", "k_proj", "v_proj", "o_proj",
@@ -93,6 +88,9 @@ trainer = SFTTrainer(
     max_seq_length = MAX_SEQ_LENGTH,
     args = SFTConfig(
         # READ: this is akin to multithreading. either faster or less VRAM
+        # if changing this, make sure `batch_size * gradient_accumulation_steps`
+        # stays constant (so 2*4 = 8 or 1*8 = 8 or ...) to not throw off step
+        # calculation
         #per_device_train_batch_size = 2, # faster
         #gradient_accumulation_steps = 4,
         per_device_train_batch_size = 1, # less VRAM intensive

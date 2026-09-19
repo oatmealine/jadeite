@@ -93,11 +93,20 @@ python scripts anyways. this is subject to change
 ### finetuning
 
 1. run `scripts/finetune.py` (see [setting up the py
-   env](#setting-up-the-py-env)). this will produce checkpoints and a lora model
+   env](#setting-up-the-py-env))
    - you are expected to edit the script to mess with parameters. sorry. look
      for comments with `READ:` for what you're expected to touch
    - this might take a bit to get started on the first run downloading the
-     model. that's ok. be patient
+     model. that's ok. be patient. pass a `HF_TOKEN` envvar if you want it to go
+     faster
+   - this will produce checkpoints and a LoRA model
+     - the checkpoints are snapshots of specific points within the training -
+       think of it like backups. **you will need them to continue training** if
+       you wish to do that
+     - the LoRA model is the "diff" or "overlay" (formally called an "adapter")
+       over the base model you've selected for training on. you can't use it on
+       another model, and it doesn't contain the original model, but with the
+       two you have a 
 2. run `scripts/lora_merge.py` with a path to the lora model, which will produce
    a merged model
 3. use the `llama-cpp` script (`git clone --depth 1
@@ -123,7 +132,7 @@ python scripts anyways. this is subject to change
      # necessary, you can just keep the -m
      -fa on -c 8192 -ctk q8_0 -ctv q8_0 --temp 0.8 --repeat-penalty 1.1
    # web ui
-   llama-server -m weights-q4_k_m.gguf --host 0.0.0.0 --port 11037 --chat-template chatml \
+   llama-server -m weights-q4_k_m.gguf --host 0.0.0.0 --port 11037 \
      # same story here
      -fa on -c 8192 -ctk q8_0 -ctv q8_0 --temp 0.8 --repeat-penalty 1.1
    ```
