@@ -3,6 +3,7 @@ raw/
 raw_ignored/
 *.jsonl
 *.csv
+raw.txt
 
 # training artifacts
 *_artifacts/
@@ -15,7 +16,10 @@ node_modules/
 # python
 .ruff_cache/
 venv/
+.venv/
+unsloth_env/
 site-packages/
+__pycache__
 
 # unsloth
 _unsloth*/

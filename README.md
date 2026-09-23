@@ -45,15 +45,24 @@ just. override it to use more tested GPUs' codepaths, and it'll work Most Of The
 Time. you can fuck about with this envvar until you succeed. `10.3.0` worked for
 me
 
+## unsloth desktop/studio notes
+
+unsloth also offers a GUI version of basically the exact thing that these
+scripts here offer - but i'd advise against using it. it gives you less control
+over the process and is less compatible with AMD and specific AI models. you're
+free to do so (and you can in fact just use the data given to you here there
+with, for instance, their [google colab
+notebooks](https://unsloth.ai/docs/get-started/unsloth-notebooks) which let you
+leech off of google for a 15GB VRAM GPU), but for ideal results (and just for
+learning's sake) the scripts here are probably better
+
+## google colab notes
+
+the scripts here have not been tested on google colab, but they _should_ work.
+i'll probably document how when i get around to using it for a higher-param
+model
+
 ## how
-
-### setting up the njs env
-
-you can just run `pnpm i` or `npm i` if you're too lazy to get pnpm
-
-see ideally you would _just_ have the py env but my stubborn ass made a js
-script because i dislike writing python scripts. and then i wrote a bunch of
-python scripts anyways. this is subject to change
 
 ### setting up the py env
 
@@ -68,8 +77,17 @@ python scripts anyways. this is subject to change
 - on non-nix, follow [the unsloth core install
   guide](https://unsloth.ai/docs/get-started/install/pip-install#unsloth-core).
   additionally, you want `rocminfo` in your `$PATH`
+  - on AMD, be sure to follow their [AMD-specific install
+    guide](https://unsloth.ai/docs/get-started/install/amd#install-pytorch).
+    ignore anything about Unsloth Desktop or Unsloth Studio here, you won't need
+    those
+  - for `bluesky_to_jsonl.py`, you also want `atproto`. if you plan on using the
+    `--redact` flag in either `bluesky_to_jsonl.py` or `discord_to_jsonl.py`,
+    also install `faker`.
 
 ### getting data
+
+#### discord
 
 1. get raw message data
   - use discordchatexporter **with csv** to get this
@@ -83,33 +101,58 @@ python scripts anyways. this is subject to change
     - you could have luck with a clientmod that scrapes messages more manually
       to be safe, but the scripts here will not account for that. maybe they
       will in the future
-2. run `scripts/reformat.js` (see [setting up the njs
-   env](#setting-up-the-njs-env)):
+2. run `scripts/discord_to_jsonl.py`:
 
    ```sh
-   node scripts/reformat.js --self-id 276416332894044160 --cutoff-date '9/14/2024' raw/*.csv > data.jsonl
+   # use `>> data.jsonl` to append to an existing jsonl file
+   python scripts/discord_to_jsonl.py --self-id 276416332894044160 --cutoff-date '2024-09-14' --redact 'jade,zydra,mayflower' raw/*.csv > data.jsonl
    ```
+
+#### bluesky
+
+bluesky gives you a much smaller amount of data to play with than discord, but
+it's still something. ideally, use both
+
+- run `scripts/bluesky_to_jsonl.py`:
+
+  ```sh
+  # use `>> data.jsonl` to append to an existing jsonl file
+  python scripts/bluesky_to_jsonl.py --cutoff-date '2024-09-14' --handle oat.zone --redact 'jade,zydra,mayflower' > data.jsonl
+  ```
 
 ### finetuning
 
-1. run `scripts/finetune.py` (see [setting up the py
-   env](#setting-up-the-py-env))
-   - you are expected to edit the script to mess with parameters. sorry. look
-     for comments with `READ:` for what you're expected to touch
-   - this might take a bit to get started on the first run downloading the
-     model. that's ok. be patient. pass a `HF_TOKEN` envvar if you want it to go
-     faster
-   - this will produce checkpoints and a LoRA model
-     - the checkpoints are snapshots of specific points within the training -
-       think of it like backups. **you will need them to continue training** if
-       you wish to do that
-     - the LoRA model is the "diff" or "overlay" (formally called an "adapter")
-       over the base model you've selected for training on. you can't use it on
-       another model, and it doesn't contain the original model, but with the
-       two you have a 
-2. run `scripts/lora_merge.py` with a path to the lora model, which will produce
-   a merged model
-3. use the `llama-cpp` script (`git clone --depth 1
+once you've found a model and have data, you can proceed to training the model:
+
+- run `scripts/finetune.py`
+  - you are expected to edit the script to mess with parameters. sorry. look for
+    comments with `READ:` for what you're expected to touch
+  - this might take a bit to get started on the first run downloading the model.
+    that's ok. be patient. pass a `HF_TOKEN` envvar if you want it to go faster
+  - this will produce checkpoints and a LoRA model
+    - the checkpoints are snapshots of specific points within the training -
+      think of it like backups. **you will need them to continue training** if
+      you wish to do that
+    - the LoRA model is the "diff" or "overlay" (formally called an "adapter")
+      over the base model you've selected for training on. you can't use it on
+      another model, and it doesn't contain the original model, but with the two
+      you have a complete model
+  - if doing CPT (continued pre-training), you can get raw data from the
+    provided jsonl scripts with the `--raw` argument
+
+### merging
+
+once you have a LoRA adapter (or multiple), you can proceed with merging it:
+
+- run `scripts/lora_merge.py` with a path to the lora model, which will produce
+  a merged model
+
+### quantization
+
+for easy, accessible use in llama-cpp and the like, you want to quantize the
+model down to a GGUF:
+
+1. use the `llama-cpp` script (`git clone --depth 1
    https://github.com/ggml-org/llama.cpp`) for converting it to gguf (you can
    reuse the py env from earlier):
 
@@ -118,25 +161,28 @@ python scripts anyways. this is subject to change
      --outfile weights-f16.gguf --outtype f16 \
      --split-max-size 50G
    ```
-4. quantize f16 down to q4_k_m for llama-cpp usage:
+2. quantize f16 down to q4_k_m usage: (you can use other sizes too, if you wish)
 
    ```sh
    llama-quantize weights-f16.gguf weights-q4_k_m.gguf Q4_K_M
    ```
-5. yay. yay! yay!!! you can use it as a regular .gguf now:
 
-   ```sh
-   # for quick tests
-   llama-cli -m weights-q4_k_m.gguf \
-     # the extra params here are just what i've gone with, but are not at all
-     # necessary, you can just keep the -m
-     -fa on -c 8192 -ctk q8_0 -ctv q8_0 --temp 0.8 --repeat-penalty 1.1
-   # web ui
-   llama-server -m weights-q4_k_m.gguf --host 0.0.0.0 --port 11037 \
-     # same story here
-     -fa on -c 8192 -ctk q8_0 -ctv q8_0 --temp 0.8 --repeat-penalty 1.1
-   ```
+### finishing
 
-   when moving this model out of the artifacts dir and sharing it, i'd recommend
-   going with the name that the artifacts folder used (minus the `_artifacts`) -
-   so, for instance, `jadeite-gen1-3b-q4_k_m.gguf`.
+yay. yay! yay!!! you can use it as a regular .gguf now:
+
+```sh
+# for quick tests
+llama-cli -m weights-q4_k_m.gguf \
+  # the extra params here are just what i've gone with, but are not at all
+  # necessary, you can just keep the -m
+  -fa on -c 8192 -ctk q8_0 -ctv q8_0 --temp 0.8 --repeat-penalty 1.2
+# web ui
+llama-server -m weights-q4_k_m.gguf --host 0.0.0.0 --port 11037 \
+  # same story here
+  -fa on -c 8192 -ctk q8_0 -ctv q8_0 --temp 0.8 --repeat-penalty 1.2
+```
+
+when moving this model out of the artifacts dir and sharing it, i'd recommend
+going with the name that the finetuning script used for the artifacts folder
+(minus the `_artifacts`) - so, for instance, `jadeite-gen1-3b-q4_k_m.gguf`.

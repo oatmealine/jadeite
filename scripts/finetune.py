@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from datasets import load_dataset
-from trl import SFTConfig, SFTTrainer
+from trl import SFTConfig, SFTTrainer, DataCollatorForCompletionOnlyLM
 from unsloth import FastLanguageModel
 from unsloth.chat_templates import get_chat_template
 
@@ -80,12 +80,15 @@ dataset = dataset.map(lambda line: ({
 
 print("  OK are you ready. here it comes. the training. here it comes")
 
+collator = DataCollatorForCompletionOnlyLM(response_template='assistant', tokenizer=tokenizer)
+
 trainer = SFTTrainer(
     model = model,
     tokenizer = tokenizer,
     train_dataset = dataset,
     dataset_text_field = "text",
     max_seq_length = MAX_SEQ_LENGTH,
+    data_collator = collator,
     args = SFTConfig(
         # READ: this is akin to multithreading. either faster or less VRAM
         # if changing this, make sure `batch_size * gradient_accumulation_steps`
