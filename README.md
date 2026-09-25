@@ -186,3 +186,17 @@ llama-server -m weights-q4_k_m.gguf --host 0.0.0.0 --port 11037 \
 when moving this model out of the artifacts dir and sharing it, i'd recommend
 going with the name that the finetuning script used for the artifacts folder
 (minus the `_artifacts`) - so, for instance, `jadeite-gen1-3b-q4_k_m.gguf`.
+
+## discord bot
+
+this repo also includes a simple discord bot for using the model. it's
+model-agnostic, but recommended to use with the finetuned models from here
+
+the system prompt is currently hardcoded. sorry
+
+to run it:
+
+1. install `py-cord`, `python-dotenv`, `aiofiles`, `openai` (included in flake)
+2. copy `.env.example` to `.env`, modify it as you see fit
+  - the bot token must have the message content intent
+3. host a llama-cpp server and run `main.py`
