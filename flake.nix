@@ -82,6 +82,11 @@
           ++ [
             pkgs.python3Packages.faker
             pkgs.python3Packages.atproto
+
+            self.packages.${system}.py-cord
+            pkgs.python3Packages.python-dotenv
+            pkgs.python3Packages.aiofiles
+            pkgs.python3Packages.openai
           ];
       };
     in rec {
